@@ -1,5 +1,4 @@
-
-export function pixelate(drawfrom, drawto, scale, ctx, palette, customColors) {
+export function pixelate(drawfrom, drawto, scale, ctx, palette, customColors, toggleHalf) {
     drawto.width = drawfrom.naturalWidth;
     drawto.height = drawfrom.naturalHeight;
     let scaledW = drawto.width * scale;
@@ -25,22 +24,42 @@ export function pixelate(drawfrom, drawto, scale, ctx, palette, customColors) {
     tempContext.drawImage(drawfrom, 0, 0, scaledW, scaledH);
     document.body.appendChild(tempCanvas);
 
+    // Get the pixelated image data
     let imageData = tempContext.getImageData(0, 0, scaledW, scaledH);
-    applyPalette(imageData, palette, customColors);
-    tempContext.putImageData(imageData, 0, 0);
+
+    // Apply palette only to the right half if toggleHalf is true
+    if (toggleHalf) {
+        // Create a copy of the image data for the right half
+        const rightHalfImageData = new ImageData(new Uint8ClampedArray(imageData.data), scaledW, scaledH);
+        applyPalette(rightHalfImageData, palette, customColors);
+
+        // Draw the left half (pixelated but with original colors)
+        ctx.drawImage(tempCanvas, 0, 0, scaledW, scaledH, 0, 0, drawto.width / 2, drawto.height);
+
+        // Draw the right half (pixelated and with applied palette)
+        const rightHalfCanvas = document.createElement("canvas");
+        rightHalfCanvas.width = scaledW;
+        rightHalfCanvas.height = scaledH;
+        const rightHalfCtx = rightHalfCanvas.getContext("2d");
+        rightHalfCtx.putImageData(rightHalfImageData, 0, 0);
+        ctx.drawImage(rightHalfCanvas, 0, 0, scaledW, scaledH, drawto.width / 2, 0, drawto.width / 2, drawto.height);
+    } else {
+        // Apply palette to the entire image
+        applyPalette(imageData, palette, customColors);
+        tempContext.putImageData(imageData, 0, 0);
+        ctx.drawImage(tempCanvas, 0, 0, scaledW, scaledH, 0, 0, drawto.width, drawto.height);
+    }
 
     ctx.mozImageSmoothingEnabled = false;
     ctx.webkitImageSmoothingEnabled = false;
     ctx.imageSmoothingEnabled = false;
 
-    ctx.drawImage(tempCanvas, 0, 0, scaledW, scaledH, 0, 0, drawto.width, drawto.height);
     tempCanvas.remove();
 }
 
-
 export function applyPalette(imageData, palette, customColors) {
     const data = imageData.data;
-    
+
     const palettes = {
         grayscale: null,
         sepia: null,
@@ -153,7 +172,7 @@ export function applyPalette(imageData, palette, customColors) {
     // Process palette type
     const paletteType = palette.toLowerCase();
     const colors = paletteType === 'custom' ? customColors : palettes[paletteType];
-    
+
     // Use specialized functions for certain palette types
     if (paletteType === 'grayscale') {
         applyGrayscale(data);
@@ -166,7 +185,7 @@ export function applyPalette(imageData, palette, customColors) {
     } else {
         console.warn(`Unknown palette type: ${palette}. No changes applied.`);
     }
-    
+
     return imageData;
 }
 
@@ -182,7 +201,7 @@ function applyGrayscale(data) {
 function applySepia(data) {
     for (let i = 0; i < data.length; i += 4) {
         const r = data[i], g = data[i + 1], b = data[i + 2];
-        
+
         data[i] = Math.min(255, Math.round(r * 0.393 + g * 0.769 + b * 0.189));
         data[i + 1] = Math.min(255, Math.round(r * 0.349 + g * 0.686 + b * 0.168));
         data[i + 2] = Math.min(255, Math.round(r * 0.272 + g * 0.534 + b * 0.131));
@@ -199,20 +218,20 @@ function applyInverted(data) {
 
 function applyColorPalette(data, colorPalette) {
     if (!colorPalette || colorPalette.length === 0) return;
-    
+
     // Pre-compute brightness values for each palette color
     const paletteWithBrightness = colorPalette.map(color => {
         const brightness = (0.299 * color[0] + 0.587 * color[1] + 0.114 * color[2]);
         return { color, brightness };
     });
-    
+
     for (let i = 0; i < data.length; i += 4) {
         const pixel = [data[i], data[i + 1], data[i + 2]];
         const pixelBrightness = (0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]);
-        
+
         // Find nearest color with brightness factored in
         const nearestColor = findNearestColorWithBrightness(pixel, pixelBrightness, paletteWithBrightness);
-        
+
         data[i] = nearestColor[0];
         data[i + 1] = nearestColor[1];
         data[i + 2] = nearestColor[2];
@@ -223,21 +242,21 @@ function applyColorPalette(data, colorPalette) {
 function findNearestColor(pixel, palette) {
     let minDistance = Infinity;
     let nearestColor = palette[0];
-    
+
     for (const color of palette) {
         const dr = pixel[0] - color[0];
         const dg = pixel[1] - color[1];
         const db = pixel[2] - color[2];
-        
+
         // Using squared Euclidean distance (faster than computing square root)
         const distance = dr * dr + dg * dg + db * db;
-        
+
         if (distance < minDistance) {
             minDistance = distance;
             nearestColor = color;
         }
     }
-    
+
     return nearestColor;
 }
 
@@ -245,25 +264,25 @@ function findNearestColor(pixel, palette) {
 function findNearestColorWithBrightness(pixel, pixelBrightness, paletteWithBrightness) {
     let minDistance = Infinity;
     let nearestColor = paletteWithBrightness[0].color;
-    
+
     for (const { color, brightness } of paletteWithBrightness) {
         const dr = pixel[0] - color[0];
         const dg = pixel[1] - color[1];
         const db = pixel[2] - color[2];
-        
+
         // Weight color distance more heavily than brightness difference
         const colorDistance = dr * dr + dg * dg + db * db;
         const brightnessDistance = Math.abs(pixelBrightness - brightness);
-        
+
         // Combined distance with brightness weighted at 30%
         const distance = colorDistance * 0.7 + brightnessDistance * 100 * 0.3;
-        
+
         if (distance < minDistance) {
             minDistance = distance;
             nearestColor = color;
         }
     }
-    
+
     return nearestColor;
 }
 
@@ -276,4 +295,3 @@ export function parseCustomPalette(paletteStr) {
         return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
     }).filter(color => color[0] !== 0 || color[1] !== 0 || color[2] !== 0);
 }
-

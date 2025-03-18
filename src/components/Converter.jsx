@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { pixelate, parseCustomPalette } from "../functions/converterLogic";
+import {terminalTheme} from "../functions/theme"
 function Converter() {
     const canvasRef = useRef(null);
     const [scale, setScale] = useState(0.1);
@@ -7,25 +8,18 @@ function Converter() {
     const [customPalette, setCustomPalette] = useState('');
     const [image, setImage] = useState(null);
     const [dragActive, setDragActive] = useState(false);
+    const [showSplitScreen, setShowSplitScreen] = useState(false)
 
     // Terminal theme colors
-    const terminalTheme = {
-        background: '#1E1E1E',
-        text: '#00FF00',
-        accent: '#39FF14',
-        secondary: '#4E4E4E',
-        border: '#565656',
-        success: '#2ECC71',
-        warning: '#FF6B6B'
-    };
+   
 
     useEffect(() => {
         if (image) {
             const canvas = canvasRef.current;
             const ctx = canvas.getContext("2d");
-            pixelate(image, canvas, scale, ctx, palette, parseCustomPalette(customPalette));
+            pixelate(image, canvas, scale, ctx, palette, parseCustomPalette(customPalette), showSplitScreen);
         }
-    }, [scale, palette, customPalette, image]);
+    }, [scale, palette, customPalette, image, showSplitScreen]);
 
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
@@ -190,6 +184,25 @@ function Converter() {
                         <option value="custom">CUSTOM</option>
                     </select>
                 </div>
+
+                {/* <button
+                    onClick={() => setShowSplitScreen(!showSplitScreen)}
+                    style={{
+                        marginBottom: '20px',
+                        padding: '10px 20px',
+                        backgroundColor: showSplitScreen ? terminalTheme.success : terminalTheme.warning,
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontFamily: 'monospace',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    {showSplitScreen ? 'Disable Split Screen' : 'Enable Split Screen'}
+                </button> */}
+
+
 
                 {palette === 'custom' && (
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
