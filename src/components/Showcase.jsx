@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { terminalTheme } from "../functions/theme";
 
+const basePath = "/pixelArtConverter"; // Adjust based on your deployment
 const images = [
-  "/Images/pixelated-image%20(1).png",
-  "/Images/pixelated-image%20(2).png",
-  "/Images/pixelated-image.png",
-  "/Images/p.png",
+  `${basePath}/Images/pixelated-image-1.png`,
+  `${basePath}/Images/pixelated-image-2.png`,
+  `${basePath}/Images/pixelated-image.png`,
+  `${basePath}/Images/p.png`,
 ];
+
 
 function Showcase() {
   const [columns, setColumns] = useState(3);
