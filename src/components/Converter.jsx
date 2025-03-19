@@ -1,6 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { pixelate, parseCustomPalette } from "../functions/converterLogic";
-import {terminalTheme} from "../functions/theme"
+import { terminalTheme } from "../functions/theme";
+
 function Converter() {
     const canvasRef = useRef(null);
     const [scale, setScale] = useState(0.1);
@@ -8,19 +9,62 @@ function Converter() {
     const [customPalette, setCustomPalette] = useState('');
     const [image, setImage] = useState(null);
     const [dragActive, setDragActive] = useState(false);
-    const [showSplitScreen, setShowSplitScreen] = useState(false)
-
-    // Terminal theme colors
-   
+    const [showSplitScreen, setShowSplitScreen] = useState(false);
+    const [blur, setBlur] = useState(0);
+    const [brightness, setBrightness] = useState(100);
+    const [opacity, setOpacity] = useState(100);
+    const [rotation, setRotation] = useState(0);
+    const [contrast, setContrast] = useState(100);
+    const [saturation, setSaturation] = useState(100);
+    const [grayscale, setGrayscale] = useState(0);
+    const [sepia, setSepia] = useState(0);
+    const [invert, setInvert] = useState(0);
 
     useEffect(() => {
         if (image) {
             const canvas = canvasRef.current;
             const ctx = canvas.getContext("2d");
+            
+            // Reset transformations
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.filter = 'none';
+            ctx.globalAlpha = 1;
+            
+            // Apply pixelation first
             pixelate(image, canvas, scale, ctx, palette, parseCustomPalette(customPalette), showSplitScreen);
+            
+            // Get the pixelated image data
+            const pixelatedImage = new Image();
+            pixelatedImage.src = canvas.toDataURL();
+            
+            pixelatedImage.onload = () => {
+                // Clear canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Apply filters
+                ctx.filter = `
+                    blur(${blur}px)
+                    brightness(${brightness}%)
+                    opacity(${opacity}%)
+                    contrast(${contrast}%)
+                    saturate(${saturation}%)
+                    grayscale(${grayscale}%)
+                    sepia(${sepia}%)
+                    invert(${invert}%)
+                `;
+                ctx.globalAlpha = opacity / 100;
+                
+                // Apply rotation
+                ctx.translate(canvas.width / 2, canvas.height / 2);
+                ctx.rotate((rotation * Math.PI) / 180);
+                ctx.translate(-canvas.width / 2, -canvas.height / 2);
+                
+                // Draw the pixelated image with filters
+                ctx.drawImage(pixelatedImage, 0, 0, canvas.width, canvas.height);
+            };
         }
-    }, [scale, palette, customPalette, image, showSplitScreen]);
-
+    }, [scale, palette, customPalette, image, showSplitScreen, blur, brightness, opacity, rotation, contrast, saturation, grayscale, sepia, invert]);
+    
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -185,25 +229,6 @@ function Converter() {
                     </select>
                 </div>
 
-                {/* <button
-                    onClick={() => setShowSplitScreen(!showSplitScreen)}
-                    style={{
-                        marginBottom: '20px',
-                        padding: '10px 20px',
-                        backgroundColor: showSplitScreen ? terminalTheme.success : terminalTheme.warning,
-                        color: '#000',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontFamily: 'monospace',
-                        fontWeight: 'bold'
-                    }}
-                >
-                    {showSplitScreen ? 'Disable Split Screen' : 'Enable Split Screen'}
-                </button> */}
-
-
-
                 {palette === 'custom' && (
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                         <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
@@ -226,6 +251,186 @@ function Converter() {
                         />
                     </div>
                 )}
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> BLUR:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                        value={blur}
+                        onChange={(e) => setBlur(parseFloat(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{blur.toFixed(1)}px</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> BRIGHTNESS:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        step="1"
+                        value={brightness}
+                        onChange={(e) => setBrightness(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{brightness}%</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> OPACITY:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={opacity}
+                        onChange={(e) => setOpacity(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{opacity}%</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> ROTATION:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        step="1"
+                        value={rotation}
+                        onChange={(e) => setRotation(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{rotation}°</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> CONTRAST:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        step="1"
+                        value={contrast}
+                        onChange={(e) => setContrast(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{contrast}%</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> SATURATION:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="200"
+                        step="1"
+                        value={saturation}
+                        onChange={(e) => setSaturation(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{saturation}%</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> GRAYSCALE:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={grayscale}
+                        onChange={(e) => setGrayscale(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{grayscale}%</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> SEPIA:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={sepia}
+                        onChange={(e) => setSepia(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{sepia}%</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> INVERT:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="1"
+                        value={invert}
+                        onChange={(e) => setInvert(parseInt(e.target.value))}
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent,
+                            backgroundColor: terminalTheme.secondary
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{invert}%</span>
+                </div>
             </div>
 
             <div style={{
@@ -271,11 +476,10 @@ function Converter() {
                 fontSize: '12px',
                 opacity: 0.7
             }}>
-                &lt;PIXELATOR v0.0.1&gt;
+                &lt;PIXELATOR v0.0.2&gt;
             </div>
         </div>
     );
 }
-
 
 export default Converter;
