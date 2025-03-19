@@ -4,7 +4,7 @@ import { terminalTheme } from "../functions/theme";
 
 function Converter() {
     const canvasRef = useRef(null);
-    const [scale, setScale] = useState(0.1);
+    const [scale, setScale] = useState(1);
     const [palette, setPalette] = useState('default');
     const [customPalette, setCustomPalette] = useState('');
     const [image, setImage] = useState(null);
@@ -19,28 +19,29 @@ function Converter() {
     const [grayscale, setGrayscale] = useState(0);
     const [sepia, setSepia] = useState(0);
     const [invert, setInvert] = useState(0);
+    const [hue, setHue] = useState(200);
 
     useEffect(() => {
         if (image) {
             const canvas = canvasRef.current;
             const ctx = canvas.getContext("2d");
-            
+
             // Reset transformations
             ctx.setTransform(1, 0, 0, 1, 0, 0);
             ctx.filter = 'none';
             ctx.globalAlpha = 1;
-            
+
             // Apply pixelation first
             pixelate(image, canvas, scale, ctx, palette, parseCustomPalette(customPalette), showSplitScreen);
-            
+
             // Get the pixelated image data
             const pixelatedImage = new Image();
             pixelatedImage.src = canvas.toDataURL();
-            
+
             pixelatedImage.onload = () => {
                 // Clear canvas
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
+
                 // Apply filters
                 ctx.filter = `
                     blur(${blur}px)
@@ -51,20 +52,21 @@ function Converter() {
                     grayscale(${grayscale}%)
                     sepia(${sepia}%)
                     invert(${invert}%)
+                    hue-rotate(${hue}deg)
                 `;
                 ctx.globalAlpha = opacity / 100;
-                
+
                 // Apply rotation
                 ctx.translate(canvas.width / 2, canvas.height / 2);
                 ctx.rotate((rotation * Math.PI) / 180);
                 ctx.translate(-canvas.width / 2, -canvas.height / 2);
-                
+
                 // Draw the pixelated image with filters
                 ctx.drawImage(pixelatedImage, 0, 0, canvas.width, canvas.height);
             };
         }
-    }, [scale, palette, customPalette, image, showSplitScreen, blur, brightness, opacity, rotation, contrast, saturation, grayscale, sepia, invert]);
-    
+    }, [scale, palette, customPalette, image, showSplitScreen, blur, brightness, opacity, rotation, contrast, saturation, grayscale, sepia, invert, hue]);
+
     const handleImageUpload = (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -189,6 +191,26 @@ function Converter() {
                     />
                     <span style={{ marginLeft: '10px', minWidth: '40px' }}>{scale.toFixed(2)}</span>
                 </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                    <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
+                        <span style={{ color: terminalTheme.accent }}>$</span> HUE:
+                    </label>
+                    <input
+                        type="range"
+                        min="0"
+                        max="360"
+                        step="1"
+                        value={hue}
+                        onChange={(e) => setHue(Math.min(Math.max(Number(e.target.value), 0), 360))} // Clamping
+                        style={{
+                            flex: 1,
+                            accentColor: terminalTheme.accent
+                        }}
+                    />
+                    <span style={{ marginLeft: '10px', minWidth: '40px' }}>{hue}°</span>
+                </div>
+
 
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
                     <label style={{ marginRight: '10px', minWidth: '120px', textAlign: 'left' }}>
