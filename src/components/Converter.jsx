@@ -19,7 +19,7 @@ function Converter() {
     const [grayscale, setGrayscale] = useState(0);
     const [sepia, setSepia] = useState(0);
     const [invert, setInvert] = useState(0);
-    const [hue, setHue] = useState(200);
+    const [hue, setHue] = useState(0);
 
     useEffect(() => {
         if (image) {
@@ -140,7 +140,7 @@ function Converter() {
                 color: terminalTheme.accent,
                 textShadow: '0 0 5px rgba(57, 255, 20, 0.5)',
                 margin: '20px 0'
-            }}>X1VI PIXELATOR</h1>
+            }}>EDITOR</h1>
 
             <div style={{
                 border: `2px dashed ${dragActive ? terminalTheme.accent : terminalTheme.border}`,
@@ -489,7 +489,7 @@ function Converter() {
                     transition: 'all 0.3s ease'
                 }}
             >
-                $ DOWNLOAD PIXELATED IMAGE
+                $ DOWNLOAD  IMAGE
             </button>
 
             <div style={{

@@ -18,9 +18,6 @@ const TerminalNavbar = ({ setActiveComponent }) => {
         
       }}
     >
-      <span style={{ color: terminalTheme.accent, fontWeight: "bold", fontFamily:'monospace' }}>
-        Terminal Navbar
-      </span>
       <div>
         <button
           style={{
